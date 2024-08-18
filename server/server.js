@@ -1,4 +1,5 @@
 const http = require('http')
+const {scrapeData} = require('./browser.js')
 
 const PORT = process.env.PORT || 3500
 
@@ -13,4 +14,6 @@ const server = http.createServer(function(req, res){
 server.listen(PORT, ()=>{
     console.log(`Server is listening on ${PORT}`)
 })
+
+
 
