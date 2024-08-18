@@ -1,7 +1,9 @@
-const http = require('http')
-const {scrapeData} = require('./browser.js')
+const http = require('http');
+const {runBrowserJS} = require('./data.js');
 
-const PORT = process.env.PORT || 3500
+runBrowserJS()
+
+const PORT = process.env.PORT || 6000;
 
 const server = http.createServer(function(req, res){
     async function createWrite(){
