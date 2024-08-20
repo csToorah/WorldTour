@@ -3,9 +3,12 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const fsPromises = require('fs').promises
 
-function makeHtml(){
-    
-}
+openBrowser().then(values =>{
+    fs.writeFile('./client/json/data.json', JSON.stringify(values, null, 2),'utf-8' , (err)=>{
+        if(err){console.log(err)}
+        console.log('Saved!')
+    })
+})
 
 async function openBrowser(){
     let browser = await puppeteer.launch()
@@ -38,28 +41,21 @@ async function openBrowser(){
     return scrape(mlbScoresObject)
 }
 
-openBrowser().then(values =>{
-    makeHtml(values)
-}).catch(err =>{
-    console.log(err)
-})
-
-const PORT = process.env.PORT || 4000;
-async function readFile(res){
-    try{
-        let data = await fsPromises.readFile('../client/views/index.html')
-
-        res.writeHead(200, {'Content-Type': 'text/html'})
-        res.end(data)
-
-    }catch(err){
-        console.log(err)
-    }
-}
+const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(function(req, res){
     console.log(req.url)
-    readFile(res)
+    async function readFile(){
+        try{
+            let data = await readFile('./client/json/data.json')
+
+            res.writeHead(200, {"Content-Type": "text/html"})
+            res.end(data)
+        }catch(err){
+            console.error(err)
+        }
+    }
+    readFile()
 })
 
 server.listen(PORT, ()=>{

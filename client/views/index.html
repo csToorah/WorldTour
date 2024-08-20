@@ -6,9 +6,77 @@
     <title>Games</title>
 </head>
 <script>
-    
+    async function fetchData(){
+        try{
+            let response = await fetch('../json/data.json')
+
+            if(!response.ok) throw new Error(`Response Status ${response.status}`)
+
+            let data = await response.json()
+
+            document.querySelector('.homeName').textContent = data.home.name;
+            document.querySelector('.homeScore').textContent = data.home.score;
+            document.querySelector('.visitorName').textContent = data.visitor.name;
+            document.querySelector('.visitorScore').textContent = data.visitor.score;
+            document.querySelector('.inning').textContent = data.inning;
+        }catch(err){
+            console.log(err)
+        }
+    }
+    fetchData()
 </script>
 <body>
-    
+    <div class="game">
+        <p class="homeName"></p>
+        <p class="homeScore"></p>
+        <p class="visitorName"></p>
+        <p class="visitorScore"></p>
+        <p class="inning"></p>
+    </div>
+    <style>
+        *{
+            padding: 0px;
+            margin: 0px;
+            box-sizing: border-box;
+        }
+        body{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100dvh;
+        }
+        .game{
+            border: solid;
+            border-radius: 10px;
+            width: 300px;
+            height: 150px;
+            display: grid;
+            grid-template-areas: 'homeName homeScore inning'
+                                'visitorName visitorScore inning';
+            grid-template-columns: 2fr 2fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            
+            p{
+                font-size: 1.3rem;
+                align-self: center;
+                text-align: center;
+            }
+            .homeName{
+                grid-area: homeName;
+            }
+            .homeScore{
+                grid-area: homeScore;
+            }
+            .visitorName{
+                grid-area: visitorName;
+            }
+            .visitorScore{
+                grid-area: visitorScore;
+            }
+            .inning{
+                grid-area: inning;
+            }
+        }
+    </style>
 </body>
 </html>
