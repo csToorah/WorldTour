@@ -35,7 +35,7 @@ async function openBrowser(){
         },
         scrapeScoresPage: async function(){
             let gameContainers = await page.$$('.gmoPjI')
-            let teams = [];
+            let games = [];
             for await(const gameContainer of gameContainers){
                 let namesArray = []
                 for await(const name of teamNames = await gameContainer.$$('.fdaoCu')){
@@ -49,22 +49,14 @@ async function openBrowser(){
                     }
                 }
                 let gameStatus = await getGameStatus()
-                teams.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus})
-                for await(btn of btns = await gameContainer.$$('.dIJeFt')){
-                    if(await btn.evaluate(el => el.textContent) === 'Gameday'){
-                        try{
-                            await btn.evaluate(el => el.click())
-                            await page.waitForNavigation({'waitUntil': 'domcontentloaded'})
-                        }catch(err){
-                            console.log(err)
-                        }
-                        break;
-                    }
+                games.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus})
+                for await(const game of games){
+                    console.log(game.gameStatus, `${game.visitor} vs. ${game.home}`, game.gameStatus === 'Final' ? 3: 2)
+                    //await (await gameContainer.$(`.kwMGcY > div:nth-child(${selector}) > a > button`)).evaluate(el => el.textContent)
                 }
-
             }
             
-            return teams;
+            return games;
         }
     }
 }
