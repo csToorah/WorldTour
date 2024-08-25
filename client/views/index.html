@@ -8,11 +8,13 @@
 <script>
     async function fetchData(){
         try{
-            let response = await fetch('../json/data.json')
+            let response = await fetch('client/json/data.json')
 
             if(!response.ok) throw new Error(`Response Status ${response.status}`)
 
             let data = await response.json()
+
+            console.log(data)
 
             document.querySelector('.homeName').textContent = data.home.name;
             document.querySelector('.homeScore').textContent = data.home.score;

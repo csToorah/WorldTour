@@ -7,11 +7,17 @@
     "start": "node server/server",
     "dev": "nodemon server/server"
   },
+  "nodemonConfig": {
+    "ignore": [
+      "client/json/data.json"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "nodemon": "^3.1.4",
-    "puppeteer": "^23.1.0"
+    "puppeteer": "^23.1.0",
+    "websocket": "^1.0.35"
   }
 }
