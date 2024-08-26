@@ -1,6 +1,7 @@
 const http = require('http');
 const puppeteer = require('puppeteer')
 const fs = require('fs');
+const { Console } = require('console');
 const fsPromises = require('fs').promises
 
 async function collectData(){
@@ -17,6 +18,7 @@ async function openBrowser(){
     let browser = await puppeteer.launch()
     let page = await browser.newPage()
     let browserObjects = new Map()
+
 
     return{
         loadPage: async function(url){
@@ -38,14 +40,18 @@ async function openBrowser(){
                     }
                 }
                 let gameStatus = await getGameStatus()
-                games.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus, gameContainer: gameContainer})
+                let href = await (await gameContainer.$('.kwMGcY > div:nth-child(3) > a')).evaluate(el => el.href)
+                games.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus, gameDayPage: href})
             }
             return games;
         },
         scrapeGameDayPages: async function(games){
-            let href = await (await games[0].gameContainer.$('.kwMGcY > div:nth-child(3) > a')).evaluate(el => el.href)
-            await page.goto(href)
-            console.log(page.url())
+            for await(const game of games){
+                console.log(game.home, game.visitor, game.gameStatus)
+                await page.goto(game.gameDayPage)
+                await page.waitForNavigation({'waitUntil': 'domcontentloaded'})
+                console.log(page.url())
+            }
         }
     }
 }
