@@ -8,6 +8,7 @@ async function collectData(){
 
     await browserFunctions.loadPage('https://www.mlb.com/scores')
     let games = await browserFunctions.scrapeScoresPage()
+    let data = await browserFunctions.scrapeGameDayPages(games)
 }
 
 collectData()
@@ -16,18 +17,6 @@ async function openBrowser(){
     let browser = await puppeteer.launch()
     let page = await browser.newPage()
     let browserObjects = new Map()
-
-    const gamedayOBject = {
-        home: {
-            name: '.jvtlUR',
-            score: '.fShOIg.home'
-        },
-        visitor: {
-            name: '.dtUVre',
-            score: '.fShOIg.away'
-        },
-        inning: '.jfAqho'
-    }
 
     return{
         loadPage: async function(url){
@@ -44,19 +33,19 @@ async function openBrowser(){
                 let getGameStatus = async (gameStatusClasses = ['.fGwgfi', '.feaLYF', '.cBEKUV'])=>{
                     for await(const gameStatusClass of gameStatusClasses){
                         if(await gameContainer.$(gameStatusClass)){
-                            return (await(await gameContainer.$(gameStatusClass)).evaluate(el => el.textContent)).split('F')[0]
+                            return (await(await gameContainer.$(gameStatusClass)).evaluate(el => el.textContent)).split('Free')[0]
                         }
                     }
                 }
                 let gameStatus = await getGameStatus()
-                games.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus})
-                for await(const game of games){
-                    console.log(game.gameStatus, `${game.visitor} vs. ${game.home}`, game.gameStatus === 'Final' ? 3: 2)
-                    //await (await gameContainer.$(`.kwMGcY > div:nth-child(${selector}) > a > button`)).evaluate(el => el.textContent)
-                }
+                games.push({home: namesArray[1], visitor: namesArray[0], gameStatus: gameStatus, gameContainer: gameContainer})
             }
-            
             return games;
+        },
+        scrapeGameDayPages: async function(games){
+            let href = await (await games[0].gameContainer.$('.kwMGcY > div:nth-child(3) > a')).evaluate(el => el.href)
+            await page.goto(href)
+            console.log(page.url())
         }
     }
 }
