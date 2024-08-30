@@ -29,8 +29,8 @@ async function mlbScrapperFunctions(){
                 })
 
                 let gameStatus = await getGameStatus(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus, gameContainer),'textContent'))
-                
-                let href = await getGameDayLink(await browser.getSelectors(mlbSelectors.scoresPage.btnsContainer), browser)
+            
+                let href = await getGameDayLink(await browser.getSelectors(mlbSelectors.scoresPage.btnsContainer, gameContainer), browser)
 
                 game.gameStatus = gameStatus;
                 game.home.name = namesArray[1]
@@ -59,21 +59,21 @@ async function mlbScrapperFunctions(){
 
 async function getGameStatus(gameStatus = ''){
     gameStatus = gameStatus.split('Free')[0]
+    gameStatus = gameStatus.toLowerCase()
 
-    let chunk = gameStatus.split(' ')[1]
-
-    if(chunk > 0) return 'live'
-    else if(chunk === 'AM' || 'PM'){ return 'preGame'}
+    let [firstPart, secondPart] = gameStatus.split(' ')
+    if(secondPart > 0) return 'live'
+    else if(secondPart === 'am' || secondPart === 'pm' || firstPart.includes('warmup')){ return 'preGame'}
     else return 'Final';
 }
 
 async function getGameDayLink(btnsContainer, functions){
     let href = await forOfAwait(btnsContainer, async (btn)=>{
-        let btnName = await functions.evaluateSelector(btn, 'textContent')
-
-        if(btnName == 'Box' || btnName == 'Gameday' || btnName == 'Preview') return await functions.evaluateSelector(btn, 'href')
+        let btnName = await functions.evaluateSelector(await functions.getSelector('.dIJeFt', btn), 'textContent')
+        if(btnName === 'Box' || btnName === 'Gameday' || btnName === 'Preview') return await functions.evaluateSelector(await functions.getSelector('a', btn), 'href')
     })
-    return href;
+    href = href.filter((link)=> typeof(link) !== 'undefined')
+    return href[0];
 }
 
 
@@ -83,11 +83,7 @@ const mlbSelectors = {
         gameContainers: '.gmoPjI',
         teamNames: '.fdaoCu',
         gameStatus: '.cBEKUV',
-        btnsContainer: '.dIJeFt',
-        gamedayLink: (selector)=>{
-            return `.kwMGcY > div:nth-child(${selector}) > a`
-        }
-
+        btnsContainer: '.dlHiDf',
     },
     finalLineups: {
         batters: {
