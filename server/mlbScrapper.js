@@ -2,7 +2,6 @@ const {browserFunctions} = require('./scrapper.js');
 const {forOfAwait} = require('./codeComponents.js');
 const {Game} = require('./Game.js');
 const { getQueryHandlerAndSelector } = require('puppeteer');
-const { connection } = require('websocket');
 
 async function mlbScrapperFunctions(){
     const browser = await  browserFunctions()
@@ -28,11 +27,10 @@ async function mlbScrapperFunctions(){
                     }
                     namesArray.push(await browser.evaluateSelector(teamName, 'textContent'))
                 })
-                let gameStatus = typeof(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus.preGame, gameContainer), 'textContent', {ignore: true})) !== 'undefined'? 'preGame': false
-                                || typeof(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus.live, gameContainer), 'textContent', {ignore: true})) !== 'undefined'? 'live': false
-                                || typeof(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus.final, gameContainer), 'textContent', {ignore: true})) !== 'undefined'? 'final': false
-                let selector = gameStatus === 'final'? 3: (await browser.getSelectors(mlbSelectors.scoresPage.btnsContainer)).length === 3? 1: 2;
-                let href = await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gamedayLink(selector), gameContainer), 'href')
+
+                let gameStatus = await getGameStatus(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus, gameContainer),'textContent'))
+                
+                let href = await getGameDayLink(await browser.getSelectors(mlbSelectors.scoresPage.btnsContainer), browser)
 
                 game.gameStatus = gameStatus;
                 game.home.name = namesArray[1]
@@ -59,13 +57,32 @@ async function mlbScrapperFunctions(){
     }
 }
 
+async function getGameStatus(gameStatus = ''){
+    gameStatus = gameStatus.split('Free')[0]
+
+    let chunk = gameStatus.split(' ')[1]
+
+    if(chunk > 0) return 'live'
+    else if(chunk === 'AM' || 'PM'){ return 'preGame'}
+    else return 'Final';
+}
+
+async function getGameDayLink(btnsContainer, functions){
+    let href = await forOfAwait(btnsContainer, async (btn)=>{
+        let btnName = await functions.evaluateSelector(btn, 'textContent')
+
+        if(btnName == 'Box' || btnName == 'Gameday' || btnName == 'Preview') return await functions.evaluateSelector(btn, 'href')
+    })
+    return href;
+}
+
 
 
 const mlbSelectors = {
     scoresPage: {
         gameContainers: '.gmoPjI',
         teamNames: '.fdaoCu',
-        gameStatus: {preGame: '.fGwgfi', live: '.fGwgfi', final: '.feaLYF'},
+        gameStatus: '.cBEKUV',
         btnsContainer: '.dIJeFt',
         gamedayLink: (selector)=>{
             return `.kwMGcY > div:nth-child(${selector}) > a`
