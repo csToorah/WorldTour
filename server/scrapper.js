@@ -27,7 +27,11 @@ async function browserFunctions(){
             return page.url();
         },
         awaitNavigation: async function(){
-            await page.waitForNavigation({'waitUntil': 'domcontentloaded'})
+            try{
+                await page.waitForNavigation({'waitUntil': 'domcontentloaded'})
+            }catch(err){
+                console.log(`There was an error loading the page ${page.url()}`)
+            }
         },
         getSelector: async function(selector, container = page){
             try{

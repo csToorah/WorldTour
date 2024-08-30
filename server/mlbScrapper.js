@@ -28,11 +28,11 @@ async function mlbScrapperFunctions(){
                     namesArray.push(await browser.evaluateSelector(teamName, 'textContent'))
                 })
 
-                let gameStatus = await getGameStatus(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus, gameContainer),'textContent'))
+                let status = await getGameStatus(await browser.evaluateSelector(await browser.getSelector(mlbSelectors.scoresPage.gameStatus, gameContainer),'textContent'))
             
                 let href = await getGameDayLink(await browser.getSelectors(mlbSelectors.scoresPage.btnsContainer, gameContainer), browser)
 
-                game.gameStatus = gameStatus;
+                game.status = status;
                 game.home.name = namesArray[1]
                 game.visitor.name = namesArray[0]
                 game.link = href;
@@ -45,16 +45,72 @@ async function mlbScrapperFunctions(){
                 await browser.loadPage(game.link)
                 await browser.awaitNavigation()
 
-                let [visitor, waste, home]= await browser.getSelectors(mlbSelectors.finalLineups.batters.lineup)
-
-                return await forOfAwait([visitor, home], async (lineup)=>{
-                    return await forOfAwait(await browser.getSelectors(mlbSelectors.finalLineups.batters.name, lineup), async (name)=>{
-                        return await browser.evaluateSelector(name, 'textContent')
-                    })
-                })
+                if(game.status === 'preGame'){
+                    return scrapePreGameLineups(browser);
+                }else if(game.status === 'live'){
+                    return scrapeLiveLineups(browser);
+                }else if(game.status === 'final'){
+                    return scrapeFinalLineups(browser)
+                }else{
+                    console.log(game.status)
+                    return 'Not able to scrape lineup'
+                }
             })
         }
     }
+}
+
+
+async function scrapePreGameLineups(browser){
+
+    let [visitorPitcher, homePitcher] = await forOfAwait(await browser.getSelectors(mlbSelectors.preGameLineUps.pitchers.box), async (box)=>{
+        console.log(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.name, box))
+        /*return {
+            name: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.name, box), 'textContent'),
+            pitchingArm: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.pitchingArm, box), 'textContent'),
+            record: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.record, box), 'textContent'),
+            ERA: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.ERA, box), 'textContent'),
+            K: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.pitchers.K, box), 'textContent')
+        }*/
+        return 'Hello'
+    })
+    /*
+    let home = true;
+    let [visitorLineup, homeLineup] = await forOfAwait(await browser.getSelectors(mlbSelectors.preGameLineUps.batters.box), async (box)=>{
+        let row = 0;
+        home = !home
+        return forOfAwait(await browser.getSelectors(mlbSelectors.preGameLineUps.batters.name, box), async (name)=>{
+            return{
+                name: name,
+                position: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.batters.position, box), 'textContent'),
+                battingSide: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.batters.boxStatGrapper(1, row, home), box), 'textContent'),
+                AVG: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.batters.boxStatGrapper(5, row, home), box), 'textContent'),
+                OPS: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.preGameLineUps.batters.boxStatGrapper(6, row, home)), 'textContent')
+            }
+        })
+    })
+
+
+    return {
+        vistor: {
+            pitcher: visitorPitcher,
+            lineup: visitorLineup
+        },
+        home: {
+            pitcher: homePitcher,
+            lineup: homeLineup
+        }
+    }
+    */
+   return 'Hello'
+}
+
+async function scrapeLiveLineups(browser){
+    return 'Scraping live lineups'
+}
+
+async function scrapeFinalLineups(browser){
+    return 'Scraping Final lineups'
 }
 
 async function getGameStatus(gameStatus = ''){
@@ -64,7 +120,7 @@ async function getGameStatus(gameStatus = ''){
     let [firstPart, secondPart] = gameStatus.split(' ')
     if(secondPart > 0) return 'live'
     else if(secondPart === 'am' || secondPart === 'pm' || firstPart.includes('warmup')){ return 'preGame'}
-    else return 'Final';
+    else return 'final';
 }
 
 async function getGameDayLink(btnsContainer, functions){
@@ -101,6 +157,24 @@ const mlbSelectors = {
             boxStatGrapper: (column, row, home)=>{
                 return `#tb-${home? '6':'4'}-body\ row-${row}\ col-${column}`
             }
+        }
+    },
+    preGameLineUps: {
+        batters: {
+            box: '.gzGGfc',
+            name: '.izsxYc',
+            position: '.rRNqQ',
+            boxStatGrapper: (column, row, home)=>{
+                return `#tb-${home? '16':'17'}-body\ row-${row}\ col-${column}`
+            }
+        },
+        pitchers: {
+            box: '.lcFuuA',
+            name: '.jJjzqB',
+            pitchingArm: '.ljFmix:nth-child(1)',
+            record: '.cTXOhx:nth-child(1)',
+            ERA: '.cTXOhx:nth-child(3)',
+            K: '.cTXOhx:nth-child(4)'
         }
     }
 }
