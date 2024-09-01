@@ -1,9 +1,13 @@
-async function forOfAwait(object, process){
-    let array = []
-    for await(const element of object){
-        array.push(await process(element))
+async function forOfAwait(object, process, execute = true){
+    if(execute){
+        let array = []
+        for await(const element of object){
+            array.push(await process(element))
+        }
+        return array;
     }
-    return array;
+    console.log(execute)
+    return [];
 }
 
 module.exports = {forOfAwait}

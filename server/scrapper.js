@@ -28,7 +28,7 @@ async function browserFunctions(){
         },
         awaitNavigation: async function(){
             try{
-                await page.waitForNavigation({'waitUntil': 'domcontentloaded'})
+                await page.waitForNavigation({'waitUntil': 'networkidle2'})
             }catch(err){
                 console.log(`There was an error loading the page ${page.url()}`)
             }
@@ -53,8 +53,20 @@ async function browserFunctions(){
             }catch(err){
                 if(!options.ignore)console.log(`There was an error evaulating ${element} and ${type}\n${err}`)
             }
+        },
+        clickBtn: async function(selector, options = {ignore: false}){
+            try {
+                await page.click(selector)
+                return true;
+            } catch (err) {
+                this.screenshot()
+                if(!options.ignore){console.log(`There was an error clicking ${selector}\n${err}`)}
+                return false;
+            }
+        },
+        screenshot: async function(){
+            await page.screenshot({path: 'error-screenshot.png'})
         }
-        
     }
 }
 
