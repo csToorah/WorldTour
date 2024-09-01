@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer')
 async function browserFunctions(){
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
+    await page.setViewport({width: 2000, height: 1000})
 
     return{
         getPage: function(){
@@ -59,13 +60,12 @@ async function browserFunctions(){
                 await page.click(selector)
                 return true;
             } catch (err) {
-                this.screenshot()
                 if(!options.ignore){console.log(`There was an error clicking ${selector}\n${err}`)}
                 return false;
             }
         },
-        screenshot: async function(){
-            await page.screenshot({path: 'error-screenshot.png'})
+        screenshot: async function(selector){
+            await page.screenshot({path: `server/logs/errors/error${selector}-screenshot${Math.round((Math.random() * 100))}.png`})
         }
     }
 }

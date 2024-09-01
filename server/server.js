@@ -1,5 +1,4 @@
 const http = require('http');
-const puppeteer = require('puppeteer')
 const fs = require('fs');
 const fsPromises = require('fs').promises
 const {runTerminal} = require('./terminal.js')

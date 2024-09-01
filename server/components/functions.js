@@ -6,7 +6,7 @@ async function forOfAwait(object, process, execute = true){
         }
         return array;
     }
-    console.log(execute)
+    console.log('process not ran')
     return [];
 }
 
