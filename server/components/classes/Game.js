@@ -1,12 +1,14 @@
 class Game{
-    constructor(home = {name: '', lineup: {batters: [], pitchers: [], bench: [], bullpen: []}},
-        visitor = {name: '', lineup: {batters: [], pitchers: [], bench: [], bullpen: []}},
+    constructor(home = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: ''},
+        visitor = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: ''},
         status = '',
         link = ''){
         this.home = home;
         this.visitor = visitor;
-        this.status = status
-        this.link = link
+        this.status = status;
+        this.link = link;
+        this.inning = '';
+
     }
 }
 

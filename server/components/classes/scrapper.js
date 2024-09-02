@@ -66,6 +66,9 @@ async function browserFunctions(){
         },
         screenshot: async function(selector){
             await page.screenshot({path: `server/logs/errors/error${selector}-screenshot${Math.round((Math.random() * 100))}.png`})
+        },
+        evaluateSelect: async function(selector, container = page, type){
+            return await this.evaluateSelector(await this.getSelector(selector, container), type)
         }
     }
 }
