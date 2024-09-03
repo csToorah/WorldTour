@@ -1,4 +1,4 @@
-const {mlbScrapperFunctions} = require('./components/classes/mlbScrapper.js')
+const {mlbScrapperFunctions} = require('./components/classes/mlbScraper.js')
 
 async function runTerminal(){
     const mlb = await mlbScrapperFunctions();

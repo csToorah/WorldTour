@@ -61,6 +61,7 @@ async function browserFunctions(){
                 return true;
             } catch (err) {
                 if(!options.ignore){console.log(`There was an error clicking ${selector}\n${err}`)}
+                this.screenshot()
                 return false;
             }
         },

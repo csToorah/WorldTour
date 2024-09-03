@@ -1,13 +1,138 @@
-const {browserFunctions} = require('./scrapper.js');
+const {browserFunctions} = require('./scraper.js');
 const {forOfAwait} = require('../functions.js');
 const {Game} = require('./Game.js');
-const { DeviceRequestPromptManager } = require('puppeteer');
+
+const cookiesDisabler = '#onetrust-close-btn-container';
+
+const scoresPageSelectors = {
+    gameContainers: '.gmoPjI',
+    teamNames: '.fdaoCu',
+    gameStatus: '.cBEKUV',
+    btnsContainer: '.dlHiDf'
+}
+
+const preGameSelectors = {
+    containers: {
+        lineup: '.dFXpor > tbody',
+        matchup: '.dFXpor > tbody',
+        pitchersOuter: '.FqHVL',
+        pitchersInner: '.lcFuuA'
+    },
+    lineup: {
+        name: '.izsxYc',
+        battingPosition: '[data-col = "1"]',
+        AVG: '[data-col = "5"]',
+        OPS: '[data-col = "6"]'
+    },
+    matchup: {
+        name: '.izsxYc',
+        HR: '[data-col = "1"]',
+        RBI: '[data-col = "2"]',
+        AB: '[data-col = "3"]',
+        AVG: '[data-col = "4"]',
+        OPS: '[data-col = "5"]'
+    },
+    pitchers: {
+        name: '.jJjzqB',
+        pitchingArm: '.ljFmix',
+        record: '.cTXOhx .before-list',
+        ERA: '.cTXOhx .after-list',
+        K: '.cTXOhx .bottom-list'
+    }
+}
+
+const liveGameSelectors = {
+    containers: {
+        scoreBoard: '.fxhlOg > tbody',
+        batters: '.dgwGLd.batters',
+        pitchers: '.dgwGLd.pitchers',
+        bench: '.dgwGLd.bench',
+        bullpen: '.dgwGLd.bullpen'
+    },
+    scoreBoard: {
+        runs: '[data-col="0"]',
+        hits: '[data-col="1"]',
+        inning: '.jfAqho'
+    },
+    batters: {
+        name: '.Lvhrv',
+        AB: '[data-col="1"]',
+        runs: '[data-col="2"]',
+        hits: '[data-col="3"]',
+        RBI: '[data-col="4"]',
+        walks: '[data-col="5"]',
+        K: '[data-col="6"]',
+        AVG: '[data-col="7"]',
+        OPS: '[data-col="8"]'
+    },
+    pitchers: {
+        name: '.erTrAi',
+        IP: '[data-col="1"]',
+        hits: '[data-col="2"]',
+        runs: '[data-col="3"]',
+        ER: '[data-col="4"]',
+        walks: '[data-col="5"]',
+        K: '[data-col="6"]',
+        HR: '[data-col="7"]',
+        ERA: '[data-col="8"]'
+    },
+    bench: {
+        name: '.Lvhrv',
+        side: '[data-col="1"]',
+        POS: '[data-col="2"]',
+        AVG: '[data-col="3"]'
+    },
+    bullpen: {
+        name: '.Lvhrv',
+        side: '[data-col="1"]',
+        ERA: '[data-col="2"]',
+        IP: '[data-col="3"]',
+        hits: '[data-col="4"]',
+        walks: '[data-col="5"]',
+        K: '[data-col="6"]'
+    }
+}
+
+const finalGameSelectors = {
+    containers: {
+        batters: '.dgwGLd.batters',
+        pitchers: '.dgwGLd.pitchers'
+    },
+    visitor: {
+        score: '.kcllEg.away'
+    },
+    home: {
+        score: '.kcllEg.home'
+    },
+    batters: {
+        name: '.Lvhrv',
+        AB: '[data-col="1"]',
+        runs: '[data-col="2"]',
+        hits: '[data-col="3"]',
+        RBI: '[data-col="4"]',
+        walks: '[data-col="5"]',
+        K: '[data-col="6"]',
+        AVG: '[data-col="7"]',
+        OPS: '[data-col="8"]'
+    },
+    pitchers: {
+        name: '.erTrAi',
+        IP: '[data-col="1"]',
+        hits: '[data-col="2"]',
+        runs: '[data-col="3"]',
+        ER: '[data-col="4"]',
+        walks: '[data-col="5"]',
+        K: '[data-col="6"]',
+        HR: '[data-col="7"]',
+        ERA: '[data-col="8"]'
+    }
+}
 
 async function mlbScrapperFunctions(){
     const browser = await  browserFunctions()
     return{
         getScoresPage: async function(){
-            return await browser.loadPage('https://www.mlb.com/scores')
+            await browser.loadPage('https://www.mlb.com/scores')
         },
         getStatsPageBatting: async function(){
             await browser.loadPage('https://www.mlb.com/stats/')
@@ -40,7 +165,7 @@ async function mlbScrapperFunctions(){
                 return game;
             })
         },
-        scrapePreGameLineup: async function(game = new Game()){
+        scrapePreGame: async function(game = new Game()){
             if(game.status !== 'preGame') return;
 
             await browser.loadPage(game.link)
@@ -94,13 +219,50 @@ async function mlbScrapperFunctions(){
 
             return game;
         },
+        scrapeLiveGame: async function(game = new Game()){
+            let scoreBoard = await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.table)
+            let [visitorInfo, homeInfo] = await forOfAwait(await browser.getSelectors('tr', scoreBoard), async (row)=>{
+                return {
+                    runs: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.runs, row), 'textContent'),
+                    hits: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.hits, row), 'textContent')
+                }
+            })
+            game.home.hits = homeInfo.hits;
+            game.home.runs = homeInfo.runs;
+            game.visitor.hits = visitorInfo.hits;
+            game.visitor.runs = visitorInfo.runs;
+            game.inning = await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.inning), 'textContent')
+
+
+            let [visitorBatters, homeBatters] = await scrapeLineup(mlbSelectors.liveGameSelectors.lineups.batters, mlbSelectors.liveGameSelectors.lineups.battersTable, browser)
+
+            game.home.lineups.batters = homeBatters;
+            game.visitor.lineups.batters = visitorBatters;
+
+            let [visitorPitchers, homePitchers] = await scrapeLineup(mlbSelectors.liveGameSelectors.lineups.pitchers, mlbSelectors.liveGameSelectors.lineups.pitchersTable, browser)
+
+            game.home.lineups.pitchers = homePitchers;
+            game.visitor.lineups.pitchers = visitorPitchers;
+
+            let [visitorBench, homeBench] = scrapeLineup(mlbSelectors.liveGameSelectors.lineups.bench, mlbSelectors.liveGameSelectors.lineups.bench.table, browser)
+            game.home.lineups.bench = homeBench;
+            game.visitor.lineups.bench = visitorBench;
+
+            let [visitorBullpen, homeBullpen] = scrapeLineup(mlbSelectors.liveGameSelectors.lineups.bullpen, mlbSelectors.liveGameSelectors.lineups.bullpenTable, browser)
+
+            game.home.lineups.bullpen = homeBullpen
+            game.visitor.lineups.bullpen = visitorBullpen
+
+            return game;
+        },
         scrapeLineups: async function(games){
             return await forOfAwait(games, async (game = new Game())=>{
+                console.log(game.status)
                 if(game.status === 'live'){
                     await browser.loadPage(game.link)
                     await browser.awaitNavigation()
-                    await browser.clickBtn(mlbSelectors.cookiesDisabler)
-                    return await scrapeLiveLineups(browser);
+                    await browser.screenshot()
+                    return await this.scrapeLiveLineups(game);
                 }else{
                     return 'Not able to scrape lineup'
                 }
@@ -109,66 +271,20 @@ async function mlbScrapperFunctions(){
     }
 }
 
-async function scrapeLiveLineups(browser, game = new Game()){
-    let scoreBoard = await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.table)
-    let [visitorInfo, homeInfo] = await forOfAwait(await browser.getSelectors('tr', scoreBoard), async (row)=>{
-        return {
-            runs: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.runs, row), 'textContent'),
-            hits: await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.hits, row), 'textContent')
-        }
-    })
-    game.home.hits = homeInfo.hits;
-    game.home.runs = homeInfo.runs;
-    game.visitor.hits = visitorInfo.hits;
-    game.visitor.runs = visitorInfo.runs;
-    game.inning = await browser.evaluateSelector(await browser.getSelector(mlbSelectors.liveGameSelectors.scoreBoard.inning), 'textContent')
 
-    let [visitorBatters, homeBatters] = await forOfAwait(await browser.getSelectors(mlbSelectors.liveGameSelectors.lineups.batters.table), async (lineup)=>{
-        let batters = await forOfAwait(await browser.getSelectors('tr', lineup), async (row)=>{
-            return {
-                name: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.name, row, 'textContent'),
-                AB: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.AB, row, 'textContent'),
-                runs: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.runs, row, 'textContent'),
-                hits: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.hits, row, 'textContent'),
-                RBI: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.RBI, row, 'textContent'),
-                walks: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.walks, row, 'textContent'),
-                AVG: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.AVG, row, 'textContent'),
-                OPS: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.batters.OPS, row, 'textContent')
-            }
+async function scrapeLineup(selectors, container, browser){
+    return forOfAwait(await browser.getSelectors(container), async (box)=>{
+        let lineup =  await forOfAwait(await browser.getSelectors('tr', box), async (row)=>{
+            let array = Array.from(selectors)
+            array.forEach(async selector=>{
+                return await browser.evaluateSelect(selector, row, 'textContent')
+            })
+            return array
         })
-        batters.pop()
-        batters.shift()
-        return batters
+        lineup.pop();
+        lineup.shift();
+        return lineup;
     })
-
-    game.home.lineups.batters = homeBatters;
-    game.visitor.lineups.batters = visitorBatters;
-
-    let [visitorPitchers, homePitchers] = await forOfAwait(await browser.getSelectors(mlbSelectors.liveGameSelectors.lineups.pitchers.table), async (lineup)=>{
-        let pitchers = await forOfAwait(await browser.getSelectors('tr', lineup), async (row)=>{
-            return {
-                name: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.name, row, 'textContent'),
-                IP: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.IP, row, 'textContent'),
-                hits: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.hits, row, 'textContent'),
-                runs: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.runs, row, 'textContent'),
-                ER: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.ER, row, 'textContent'),
-                walks: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.walks, row, 'textContent'),
-                K: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.K, row, 'textContent'),
-                HR: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.HR, row, 'textContent'),
-                ERA: await browser.evaluateSelect(mlbSelectors.liveGameSelectors.lineups.pitchers.ERA, row, 'textContent')
-            }
-        })
-        pitchers.pop()
-        pitchers.shift()
-        return pitchers
-    })
-
-    console.log(visitorBatters, homeBatters)
-    return 'Scraping live lineups'
-}
-
-async function scrapeFinalLineups(browser){
-    return 'Scraping Final lineups'
 }
 
 async function mergeLineupMatchup(lineup = [], matchup = new Map()){
@@ -200,99 +316,6 @@ async function getGameDayLink(btnsContainer, functions){
     })
     href = href.filter((link)=> typeof(link) !== 'undefined')
     return href[0];
-}
-
-
-
-
-//Selectors for Scraping Pages
-
-const mlbSelectors = {
-    cookiesDisabler: '#onetrust-close-btn-container',
-    scoresPage: {
-        gameContainers: '.gmoPjI',
-        teamNames: '.fdaoCu',
-        gameStatus: '.cBEKUV',
-        btnsContainer: '.dlHiDf',
-    },
-    preGameSelectors: {
-        lineup: {
-            box: '.dFXpor > tbody',
-            name: '.izsxYc',
-            battingPosition: '[data-col = "1"]',
-            AVG: '[data-col = "5"]',
-            OPS: '[data-col = "6"]'
-        },
-        matchup: {
-            box: '.dFXpor > tbody',
-            name: '.izsxYc',
-            HR: '[data-col = "1"]',
-            RBI: '[data-col = "2"]',
-            AB: '[data-col = "3"]',
-            AVG: '[data-col = "4"]',
-            OPS: '[data-col = "5"]'
-        },
-        pitchersContainer: '.FqHVL',
-        pitchers: {
-            box: '.lcFuuA',
-            name: '.jJjzqB',
-            pitchingArm: '.ljFmix',
-            record: '.cTXOhx .before-list',
-            ERA: '.cTXOhx .after-list',
-            K: '.cTXOhx .bottom-list'
-        }
-    },
-    liveGameSelectors: {
-        scoreBoard: {
-            table: '.fxhlOg > tbody',
-            runs: '[data-col="0"]',
-            hits: '[data-col="1"]',
-            inning: '.jfAqho'
-        },
-        lineups: {
-            batters: {
-                table: '.dgwGLd.batters',
-                name: '.Lvhrv',
-                AB: '[data-col="1"]',
-                runs: '[data-col="2"]',
-                hits: '[data-col="3"]',
-                RBI: '[data-col="4"]',
-                walks: '[data-col="5"]',
-                K: '[data-col="6"]',
-                AVG: '[data-col="7"]',
-                OPS: '[data-col="8"]'
-            },
-            pitchers: {
-                table: '.dgwGLd.pitchers',
-                name: '.erTrAi',
-                IP: '[data-col="1"]',
-                hits: '[data-col="2"]',
-                runs: '[data-col="3"]',
-                ER: '[data-col="4"]',
-                walks: '[data-col="5"]',
-                K: '[data-col="6"]',
-                HR: '[data-col="7"]',
-                ERA: '[data-col="8"]'
-            },
-            bench: {
-                table: '.dgwGLd.bench',
-                name: '.Lvhrv',
-                side: '[data-col="1"]',
-                POS: '[data-col="1"]',
-                AVG: '[data-col="2"]'
-            },
-            bullpen: {
-                table: 'dgwGLd bullpen',
-                name: '.Lvhrv',
-                side: '[data-col="1"]',
-                ERA: '[data-col="1"]',
-                IP: '[data-col="1"]',
-                hits: '[data-col="1"]',
-                walks: '[data-col="1"]',
-                K: '[data-col="1"]'
-            }
-        }
-    }
 }
 
 module.exports = {mlbScrapperFunctions}
