@@ -220,6 +220,10 @@ async function mlbScrapperFunctions(){
             return game;
         },
         scrapeLiveGame: async function(game = new Game()){
+
+            await browser.loadPage(game.link)
+            await browser.awaitNavigation();
+
             let scoreBoard = await browser.getSelector(liveGameSelectors.containers.scoreBoard)
             let [visitorInfo, homeInfo] = await forOfAwait(await browser.getSelectors('tr', scoreBoard), async (row)=>{
                 return {
@@ -234,55 +238,45 @@ async function mlbScrapperFunctions(){
             game.inning = await browser.evaluateSelector(await browser.getSelector(liveGameSelectors.scoreBoard.inning), 'textContent')
 
 
-            let [visitorBatters, homeBatters] = await scrapeLineup(liveGameSelectors.batters, liveGameSelectors.containers.batters, browser)
+            let [visitorBatters, ignore, homeBatters] = await scrapeLineup(liveGameSelectors.batters, liveGameSelectors.containers.batters, browser, 2)
 
             game.home.lineups.batters = homeBatters;
             game.visitor.lineups.batters = visitorBatters;
 
-            let [visitorPitchers, homePitchers] = await scrapeLineup(liveGameSelectors.pitchers, liveGameSelectors.containers.pitchers, browser)
+            let [visitorPitchers, empty, homePitchers] = await scrapeLineup(liveGameSelectors.pitchers, liveGameSelectors.containers.pitchers, browser, 2)
 
             game.home.lineups.pitchers = homePitchers;
             game.visitor.lineups.pitchers = visitorPitchers;
 
-            let [visitorBench, homeBench] = scrapeLineup(liveGameSelectors.bench, liveGameSelectors.containers.bench, browser)
+            let [visitorBench, trash, homeBench] = await scrapeLineup(liveGameSelectors.bench, liveGameSelectors.containers.bench, browser, 1)
             game.home.lineups.bench = homeBench;
             game.visitor.lineups.bench = visitorBench;
 
-            let [visitorBullpen, homeBullpen] = scrapeLineup(liveGameSelectors.bullpen, liveGameSelectors.containers.bullpen, browser)
+            let [visitorBullpen, garbage, homeBullpen] = await scrapeLineup(liveGameSelectors.bullpen, liveGameSelectors.containers.bullpen, browser, 1)
 
             game.home.lineups.bullpen = homeBullpen
             game.visitor.lineups.bullpen = visitorBullpen
 
             return game;
-        },
-        scrapeLineups: async function(games){
-            return await forOfAwait(games, async (game = new Game())=>{
-                console.log(game.status)
-                if(game.status === 'live'){
-                    await browser.loadPage(game.link)
-                    await browser.awaitNavigation()
-                    return await this.scrapeLiveLineups(game);
-                }else{
-                    return 'Not able to scrape lineup'
-                }
-            })
         }
     }
 }
 
 
-async function scrapeLineup(selectors, container, browser){
-    return forOfAwait(await browser.getSelectors(container), async (box)=>{
-        let lineup =  await forOfAwait(await browser.getSelectors('tr', box), async (row)=>{
-            let array = Array.from(selectors)
-            array.forEach(async selector=>{
+async function scrapeLineup(selectors, container, browser, cuttoff){
+    return await forOfAwait(await browser.getSelectors(container), async (lineup)=>{
+        let array = await forOfAwait(await browser.getSelectors('tr', lineup), async (row)=>{
+            return await forOfAwait(Object.values(selectors), async (selector)=>{
                 return await browser.evaluateSelect(selector, row, 'textContent')
             })
-            return array
         })
-        lineup.pop();
-        lineup.shift();
-        return lineup;
+        if(cuttoff === 2){
+            array.pop()
+            array.shift()
+        }else{
+            array.shift()
+        }
+        return array;
     })
 }
 
