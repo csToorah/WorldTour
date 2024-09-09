@@ -44,10 +44,10 @@ const preGameSelectors = {
 const liveGameSelectors = {
     containers: {
         scoreBoard: '.fxhlOg > tbody',
-        batters: '.dgwGLd.batters',
-        pitchers: '.dgwGLd.pitchers',
-        bench: '.dgwGLd.bench',
-        bullpen: '.dgwGLd.bullpen'
+        batters: '.dgwGLd.batters > tbody',
+        pitchers: '.dgwGLd.pitchers > tbody',
+        bench: '.dgwGLd.bench > tbody',
+        bullpen: '.dgwGLd.bullpen > tbody'
     },
     scoreBoard: {
         runs: '[data-col="0"]',
@@ -94,15 +94,16 @@ const liveGameSelectors = {
 }
 
 const finalGameSelectors = {
+    inning: '.jfAqho',
     containers: {
-        batters: '.dgwGLd.batters',
-        pitchers: '.dgwGLd.pitchers'
+        batters: '.dgwGLd.batters > tbody',
+        pitchers: '.dgwGLd.pitchers > tbody',
+        scoreboard: '.fxhlOg > tbody'
     },
-    visitor: {
-        score: '.kcllEg.away'
-    },
-    home: {
-        score: '.kcllEg.home'
+    scoreboard: {
+        runs: '[data-col="0"]'  ,
+        hits:  '[data-col="1"]',
+        errors: '[data-col="2"]'
     },
     batters: {
         name: '.Lvhrv',
@@ -116,7 +117,7 @@ const finalGameSelectors = {
         OPS: '[data-col="8"]'
     },
     pitchers: {
-        name: '.erTrAi',
+        name: '.Lvhrv span',
         IP: '[data-col="1"]',
         hits: '[data-col="2"]',
         runs: '[data-col="3"]',
@@ -258,24 +259,48 @@ async function mlbScrapperFunctions(){
             game.visitor.lineups.bullpen = visitorBullpen
 
             return game;
+        },
+        scrapeFinalGame: async function(game = new Game()){
+            await browser.loadPage(game.link)
+            await browser.awaitNavigation()
+
+            game.inning = await browser.evaluateSelect(finalGameSelectors.inning, undefined, 'textContent')
+
+            let[[visitorInfo, homeInfo]] = await scrapeLineup(finalGameSelectors.scoreboard, finalGameSelectors.containers.scoreboard, browser)
+            
+            game.home.runs = homeInfo[0];
+            game.home.hits = homeInfo[1];
+            game.home.errors = homeInfo[2];
+
+            game.visitor.runs = visitorInfo[0];
+            game.visitor.hits = visitorInfo[1];
+            game.visitor.errors = visitorInfo[2];
+
+
+            let [visitorBatters, homeBatters] = await scrapeLineup(finalGameSelectors.batters, finalGameSelectors.containers.batters, browser, {clip: true})
+
+            game.home.lineups.batters = homeBatters;
+            game.visitor.lineups.batters = visitorBatters;
+
+            let [visitorPitchers, homePitchers] = await scrapeLineup(finalGameSelectors.pitchers, finalGameSelectors.containers.pitchers, browser, {clip: true})
+
+            game.home.lineups.pitchers = homePitchers;
+            game.visitor.lineups.pitchers = visitorPitchers;
+
+            return game
         }
     }
 }
 
 
-async function scrapeLineup(selectors, container, browser, cuttoff){
+async function scrapeLineup(selectors, container, browser, options = {clip: false}){
     return await forOfAwait(await browser.getSelectors(container), async (lineup)=>{
         let array = await forOfAwait(await browser.getSelectors('tr', lineup), async (row)=>{
             return await forOfAwait(Object.values(selectors), async (selector)=>{
                 return await browser.evaluateSelect(selector, row, 'textContent')
             })
         })
-        if(cuttoff === 2){
-            array.pop()
-            array.shift()
-        }else{
-            array.shift()
-        }
+        if(options.clip) array.pop()
         return array;
     })
 }

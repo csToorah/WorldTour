@@ -1,6 +1,6 @@
 class Game{
-    constructor(home = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: ''},
-        visitor = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: ''},
+    constructor(home = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: '', errors: ''},
+        visitor = {name: '', lineups: {batters: [], pitchers: [], bench: [], bullpen: []}, hits: '', runs: '', errors: ''},
         status = '',
         link = ''){
         this.home = home;
@@ -8,7 +8,6 @@ class Game{
         this.status = status;
         this.link = link;
         this.inning = '';
-
     }
 }
 

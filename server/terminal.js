@@ -4,7 +4,7 @@ async function runTerminal(){
     const mlb = await mlbScrapperFunctions();
     await mlb.getScoresPage()
     let games = await mlb.scrapeScoresPage()
-    console.log(await mlb.scrapeLiveGame(games[0]))
+    console.log(await mlb.scrapeFinalGame(games[0]))
 }
 
 module.exports = {runTerminal}
