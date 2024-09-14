@@ -2,9 +2,12 @@ const {mlbScrapperFunctions} = require('./components/classes/mlbScraper.js')
 
 async function runTerminal(){
     const mlb = await mlbScrapperFunctions();
-    await mlb.getScoresPage()
-    let games = await mlb.scrapeScoresPage()
-    console.log(await mlb.scrapeFinalGame(games[0]))
+
+    await mlb.loadScoresPage();
+
+    let games = await mlb.scrapeScoresPage();
+
+    console.log(getBattersOver300(games[5]))
 }
 
 module.exports = {runTerminal}
