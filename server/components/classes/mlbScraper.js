@@ -48,7 +48,7 @@ async function mlbScrapperFunctions(){
 
             await browser.loadPage(game.link)
             await browser.awaitNavigation()
-            await browser.clickBtn(cookiesDisabler)
+            await browser.clickBtn('#onetrust-accept-btn-handler')
 
             let pitchersContainer = await browser.getSelector(preGameSelectors.containers.pitchersOuter)
 
@@ -71,29 +71,13 @@ async function mlbScrapperFunctions(){
                         OPS: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.lineup.OPS, row), 'textContent')
                     }
                 })
-            }, await browser.clickBtn('#lineups', {ignore: true}))
-
-
-            let [visitorMatchups, homeMatchups] = await forOfAwait(await browser.getSelectors(preGameSelectors.containers.matchup), async (lineup)=>{
-                return new Map(await forOfAwait(await browser.getSelectors('tr', lineup), async (row)=>{
-                    return [
-                        await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.name, row), 'textContent'),
-                        {
-                            HR: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.HR, row), 'textContent'),
-                            RBI: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.RBI, row), 'textContent'),
-                            AB: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.AB, row), 'textContent'),
-                            AVG: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.AVG, row), 'textContent'),
-                            OPS: await browser.evaluateSelector(await browser.getSelector(preGameSelectors.matchup.OPS, row), 'textContent'),
-                        }
-                    ]
-                }))
-            }, await browser.clickBtn('#matchups', {ignore: true}))
+            }, await browser.clickBtn('#lineups', {ignore: true})) //Conditional to see if lineups are shown
 
             game.home.lineups.pitchers = homePitcher
             game.visitor.lineups.pitchers = visitorPitcher
 
-            game.home.lineups.batters = await mergeLineupMatchup(homeLineup, homeMatchups)
-            game.visitor.lineups.batters = await mergeLineupMatchup(visitorLineup, visitorMatchups)
+            game.home.lineups.batters = homeLineup
+            game.visitor.lineups.batters = visitorLineup
 
             return game;
         },
@@ -102,6 +86,7 @@ async function mlbScrapperFunctions(){
 
             await browser.loadPage(game.link)
             await browser.awaitNavigation();
+            await browser.screenshot()
 
             let scoreBoard = await browser.getSelector(liveGameSelectors.containers.scoreBoard)
             let [visitorInfo, homeInfo] = await forOfAwait(await browser.getSelectors('tr', scoreBoard), async (row)=>{

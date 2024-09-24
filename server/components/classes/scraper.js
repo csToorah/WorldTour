@@ -4,6 +4,7 @@ async function browserFunctions(){
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setViewport({width: 2000, height: 1000})
+    let screenshots = 0;
 
     return{
         getPage: function(){
@@ -57,19 +58,27 @@ async function browserFunctions(){
         },
         clickBtn: async function(selector, options = {ignore: false}){
             try {
+                if(!await this.getSelector(selector))  throw new Error(`not able to get ${selector}`)
                 await page.click(selector)
                 return true;
             } catch (err) {
                 if(!options.ignore){console.log(`There was an error clicking ${selector}\n${err}`)}
-                this.screenshot()
                 return false;
             }
         },
         screenshot: async function(selector){
-            await page.screenshot({path: `server/logs/errors/error${selector}-screenshot${Math.round((Math.random() * 100))}.png`})
+            await page.screenshot({path: `server/logs/errors/error${selector}-screenshot${screenshots++}.png`})
         },
         evaluateSelect: async function(selector, container = page, type){
             return await this.evaluateSelector(await this.getSelector(selector, container), type)
+        },
+        awaitSelector: async function(selector){
+            try{
+                return await page.waitForSelector(selector)
+            }catch(err){
+                console.log('There was an Error waiting for selector')
+            }
+            
         }
     }
 }

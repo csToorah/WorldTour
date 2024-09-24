@@ -10,7 +10,6 @@ const scoresPageSelectors = {
 const preGameSelectors = {
     containers: {
         lineup: '.dFXpor > tbody',
-        matchup: '.dFXpor > tbody',
         pitchersOuter: '.FqHVL',
         pitchersInner: '.lcFuuA'
     },
@@ -19,14 +18,6 @@ const preGameSelectors = {
         battingPosition: '[data-col = "1"]',
         AVG: '[data-col = "5"]',
         OPS: '[data-col = "6"]'
-    },
-    matchup: {
-        name: '.izsxYc',
-        HR: '[data-col = "1"]',
-        RBI: '[data-col = "2"]',
-        AB: '[data-col = "3"]',
-        AVG: '[data-col = "4"]',
-        OPS: '[data-col = "5"]'
     },
     pitchers: {
         name: '.jJjzqB',
